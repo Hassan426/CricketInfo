@@ -1,5 +1,5 @@
 import {NavigationContainer} from '@react-navigation/native';
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useContext} from 'react';
 import {
   Image,
   StyleSheet,
@@ -16,30 +16,34 @@ import {height, width} from 'react-native-dimension';
 import {Colors, images} from '../constants';
 import InputContainer from '../componets/InputContainers';
 import Button from '../componets/Button';
+import Button3 from '../componets/Button3';
+
 import InputText from '../componets/InputText';
 import auth from '@react-native-firebase/auth';
+import {AuthContext} from '../App';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {Formik} from 'formik';
+import * as Yup from 'yup';
+import {ActivityIndicator} from 'react-native';
+import {SafeAreaView} from 'react-native-safe-area-context';
 
-import {firebase} from '@react-native-firebase/firestore';
 const SignInScreen = ({navigation}) => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  // const [email, setEmail] = useState('');
+  // const [password, setPassword] = useState('');
+  const [isloading, setIsloading] = useState(false);
+  const [error, setError] = useState('');
 
-  // useEffect(() => {
-  //   const unsubscribe = auth().onAuthStateChanged(user => {
-  //     if (user) {
-  //       navigation.navigate('Match');
-  //     }
-  //   });
+  const {setUserId} = useContext(AuthContext);
 
-  //   return unsubscribe;
-  // }, []);
-
-  const onSignIn = () => {
+  const onSignIn = values => {
+    setIsloading(true);
     auth()
-      .signInWithEmailAndPassword(email, password)
-      .then(() => {
-        console.log('User signed in!');
-        navigation.navigate('Profile');
+      .signInWithEmailAndPassword(values.email, values.password)
+      .then(response => {
+        // storeData(response.user.uid);
+        //console.log('User signed in!', response.user.uid);
+        setUserId(response.user.uid);
+        setIsloading(true);
       })
       .catch(error => {
         if (error.code === 'auth/email-already-in-use') {
@@ -47,51 +51,95 @@ const SignInScreen = ({navigation}) => {
         }
 
         if (error.code === 'auth/invalid-email') {
-          console.log('That email address is invalid!');
+          console.log('That email address is invalid!', error);
         }
 
-        console.error(error);
+        console.error('------------------', error);
+        setIsloading(false);
+        setError(error);
+        //AuthContext;
       });
   };
 
+  // const storeData = async uid => {
+  //   try {
+  //     await AsyncStorage.setItem('UserId', uid);
+  //   } catch (error) {}
+  // };
+
+  const validationSchema = Yup.object().shape({
+    email: Yup.string().required().email().label('Email'),
+    password: Yup.string().required().min(6).label('Password'),
+  });
+
+  console.log('******************', error);
   return (
-    <ScrollView style={styles.container}>
-      <ImageBackground style={styles.image} source={images.Group1}>
+    <SafeAreaView style={styles.container}>
+      <ScrollView>
         <View style={styles.signin}>
           <TouchableOpacity onPress={() => navigation.navigate('Splash')}>
             <Icon
               name="arrow-left"
               type="material-community"
-              color={Colors.white}
+              color={Colors.blue}
               size={25}
-              style={{padding: 15, paddingRight: 5}}
             />
           </TouchableOpacity>
           <Text style={styles.singin}>Sign in</Text>
         </View>
-        <KeyboardAvoidingView style={styles.InputContainer}>
-          <InputContainer
-            placeyourtext="Enter your email"
-            name="email"
-            onChangeText={text => setEmail(text)}
-            value={email}
-          />
-          <InputContainer
-            placeyourtext="Enter your password"
-            name="lock"
-            onChangeText={text => setPassword(text)}
-            value={password}
-            keyboardType="numeric"
-          />
-          <TouchableOpacity onPress={onSignIn}>
-            <Button title="Sign In" />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
-            <InputText>Don't have an account?Sign Up</InputText>
-          </TouchableOpacity>
-        </KeyboardAvoidingView>
-      </ImageBackground>
-    </ScrollView>
+
+        <View style={styles.InputContainer}>
+          <Formik
+            initialValues={{email: '', password: ''}}
+            onSubmit={values => onSignIn(values)}
+            // onSubmit={values => console.log('ddddddddddd', values)}
+            validationSchema={validationSchema}>
+            {({handleChange, handleSubmit, errors}) => (
+              <>
+                <InputContainer
+                  placeyourtext="Enter your email"
+                  name="email"
+                  onChangeText={handleChange('email')}
+                  // value={email}
+                />
+                <Text style={{color: 'red', paddingLeft: 37}}>
+                  {errors.email}
+                </Text>
+                <InputContainer
+                  placeyourtext="Enter your password"
+                  name="lock"
+                  onChangeText={handleChange('password')}
+                  keyboardType="numeric"
+                />
+
+                <Text style={{color: 'red', paddingLeft: 37}}>
+                  {errors.password}
+                </Text>
+                {isloading ? (
+                  <>
+                    <ActivityIndicator
+                      color={Colors.blue}
+                      size={30}
+                      style={styles.loader}
+                    />
+                    <Button3 />
+                  </>
+                ) : (
+                  <>
+                    <Button title="Sign In" onPress={handleSubmit} />
+                  </>
+                )}
+
+                <Button
+                  title="Sign Up"
+                  onPress={() => navigation.navigate('SignUp')}
+                />
+              </>
+            )}
+          </Formik>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
@@ -99,26 +147,33 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  image: {
-    width: width(100),
-    height: height(97),
-  },
   singin: {
     fontSize: 30,
-    color: Colors.white,
-    paddingTop: 7,
+    color: Colors.blue,
+    paddingLeft: 5,
+    fontWeight: '700',
   },
   iconContainer: {
     flexDirection: 'row',
   },
   signin: {
-    flex: 0.6,
     flexDirection: 'row',
+    alignItems: 'center',
+    height: height(10),
+    marginHorizontal: 20,
   },
   InputContainer: {
-    flex: 0.4,
-    alignItems: 'center',
-    justifyContent: 'space-evenly',
+    height: height(90),
+    marginHorizontal: 20,
+    justifyContent: 'flex-end',
+    paddingBottom: 30,
+  },
+  loader: {
+    position: 'absolute',
+    top: 350,
+    bottom: 0,
+    left: 0,
+    right: 0,
   },
 });
 export default SignInScreen;

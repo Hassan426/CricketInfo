@@ -1,5 +1,6 @@
 import React from 'react';
 import {StyleSheet, Text, View} from 'react-native';
+import {Colors} from '../constants';
 
 export default function InputText2({children}) {
   return (
@@ -11,7 +12,7 @@ export default function InputText2({children}) {
 
 const styles = StyleSheet.create({
   text: {
-    color: 'white',
+    color: Colors.blue,
     paddingLeft: 35,
     paddingBottom: 7,
     paddingTop: 20,

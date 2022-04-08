@@ -11,6 +11,7 @@ const InputContainer = ({
   value,
   keyboardType,
   secureTextEntry,
+  style,
 }) => {
   return (
     <View style={styles.input}>
@@ -19,12 +20,13 @@ const InputContainer = ({
         type="material-community"
         color={Colors.white}
         size={20}
+        style={{marginHorizontal: 15}}
       />
 
       <TextInput
-        style={styles.textinput}
+        style={[styles.textinput, style]}
         placeholder={placeyourtext}
-        placeholderTextColor={Colors.Gray}
+        placeholderTextColor={Colors.white}
         onChangeText={onChangeText}
         value={value}
         keyboardType={keyboardType}
@@ -36,20 +38,18 @@ const InputContainer = ({
 
 const styles = StyleSheet.create({
   input: {
-    height: height(7),
-    width: width(90),
-    backgroundColor: Colors.secondary,
+    //height: height(7),
+    // width: width(90),
+    width: '100%',
+    backgroundColor: Colors.blue,
     borderRadius: 25,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingLeft: 10,
   },
   textinput: {
     // height: height(7),
     width: width(80),
-    borderRadius: 25,
-    paddingLeft: 25,
-    color: Colors.white1,
+    color: Colors.white,
   },
 });
 

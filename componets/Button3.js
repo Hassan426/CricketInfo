@@ -5,11 +5,7 @@ import {Colors} from '../constants';
 
 import InputText from './InputText';
 export default function Button({image, title, style, onPress}) {
-  return (
-    <TouchableOpacity onPress={onPress} style={[styles.card, style]}>
-      <InputText style={[styles.title, style]}>{title}</InputText>
-    </TouchableOpacity>
-  );
+  return <View onPress={onPress} style={[styles.card, style]}></View>;
 }
 
 const styles = StyleSheet.create({
@@ -21,6 +17,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,
+    opacity: 0.5,
   },
   title: {
     fontSize: 20,

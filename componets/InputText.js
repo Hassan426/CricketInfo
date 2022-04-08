@@ -1,9 +1,13 @@
 import React from 'react';
-import {StyleSheet, Text, View, style} from 'react-native';
+import {StyleSheet, Text, View, style, numberOfLines} from 'react-native';
 import {Colors} from '../constants';
 
-export default function InputText({children, style, color}) {
-  return <Text style={[styles.text, style]}>{children}</Text>;
+export default function InputText({children, style, color, numberOfLines}) {
+  return (
+    <Text numberOfLines={numberOfLines} style={[styles.text, style]}>
+      {children}
+    </Text>
+  );
 }
 
 const styles = StyleSheet.create({

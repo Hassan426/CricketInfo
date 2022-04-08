@@ -11,7 +11,7 @@ export default function Button1({title, type}) {
         style={{
           width: width(20),
           height: height(7),
-          backgroundColor: Colors.secondary,
+          backgroundColor: Colors.white,
           borderRadius: 25,
           alignItems: 'center',
           justifyContent: 'center',
@@ -19,7 +19,7 @@ export default function Button1({title, type}) {
         <Icon
           name={type}
           type="material-community"
-          color={Colors.white}
+          color={Colors.blue}
           size={18}
           style={{padding: 5}}
         />
