@@ -29,7 +29,6 @@ export default function ScoreCardScreen({navigation}) {
   // useEffect(() => {
   //   getParams();
   // }, []);
-  const pickerRef = React.useRef(null);
 
   const {userId} = useContext(AuthContext);
   const [striker, setStriker] = useState();
@@ -41,9 +40,13 @@ export default function ScoreCardScreen({navigation}) {
   const [isattackerBowler, setIsattackerBowler] = useState(false);
   const [isNonattackerBowler, setIsNonattackerBowler] = useState(false);
   const [isLoading, setIsloading] = useState(true);
+  const [battingStyle, setBattingStyle] = useState();
   const [data, setData] = useState();
+  const [teamId, setTeamId] = useState();
+  // const [playerData, setPlayerData] = useState();
 
   // const [strikerScore, setStrikerScore] = useState(0);
+  console.log('Teamiddddd', teamId);
 
   useEffect(() => {
     const subscriber = firestore()
@@ -58,6 +61,18 @@ export default function ScoreCardScreen({navigation}) {
     return () => subscriber();
   }, []);
 
+  // useEffect(() => {
+  //   const subscriber = firestore()
+  //     .collection('Player')
+  //     .doc('R6oRj1qCabXHUl2eSThm')
+  //     .onSnapshot(documentSnapshot => {
+  //       setPlayerData(documentSnapshot.data());
+  //       console.log('User data: ', documentSnapshot.data());
+  //     });
+
+  //   // Stop listening for updates when no longer required
+  //   return () => subscriber();
+  // }, []);
   const toggleStrikerBatsmanModal = () => {
     setIsStrikerModal(!isStrikerModal);
   };
@@ -112,10 +127,72 @@ export default function ScoreCardScreen({navigation}) {
           },
         },
         {merge: true},
-      );
+      )
+      .then(() => {
+        // console.log('player Added');
+        onStorePlayerRecord();
+      })
+      .catch(error => {
+        console.log('error', error);
+      });
   };
+
+  const onStorePlayerRecord = value => {
+    console.log('aaaaaaaaaaaa', value);
+    firestore()
+      .collection('Player')
+      .add({
+        playerName: striker,
+        teamName: data.Team1,
+        battingStyle: battingStyle || 'batting style',
+      })
+      .then(Response => {
+        onStoreTeamPlayers(Response._documentPath._parts[1]);
+        // console.log('playerID', Response._documentPath._parts[1]);
+      });
+  };
+
+  const onStoreTeamPlayers = playerID => {
+    console.log('iddddddddddddd', playerID);
+
+    {
+      teamId
+        ? firestore()
+            .collection('Team')
+            .doc(teamId)
+            .update({
+              Players: firestore.FieldValue.arrayUnion({
+                teamName: data.Team1,
+                playerID: playerID,
+                playerName: striker,
+                battingStyle: battingStyle,
+              }),
+            })
+            .then(() => {
+              console.log('Team data updated');
+            })
+            .catch(error => {
+              console.log('error =', error);
+            })
+        : firestore()
+            .collection('Team')
+            .add({
+              Players: firestore.FieldValue.arrayUnion({
+                teamName: data.Team1,
+                playerID: playerID,
+                playerName: striker,
+                battingStyle: battingStyle,
+              }),
+            })
+            .then(Response => {
+              // console.log('TeamId', Response._documentPath._parts[1]);
+              setTeamId(Response._documentPath._parts[1]);
+              console.log('Teamidddddaa', teamId);
+            });
+    }
+  };
+
   const onStoreWicket = wicket => {
-    console.log('REf:', pickerRef.current);
     console.log('wicket', wicket);
     firestore()
       .collection('MatchInfo')
@@ -176,13 +253,7 @@ export default function ScoreCardScreen({navigation}) {
     onStoreData(params);
   };
 
-  // const bowlerInfo = () => {
-  //   const params = {};
-  //   if (data.TeamInfo.strikerBall + 1) params.ball = data.TeamInfo.ball + 1;
-  //   if (data.TeamInfo.ball + 1 == 6) params.overs = data.TeamInfo.overs + 1;
-  //   if (data.TeamInfo.ball + 1 == 6) params.ball = data.TeamInfo.ball * 0;
-  // };
-  console.log('dataaaaaaaaaaas', data);
+  // console.log('dataaaaaaaaaaas', data);
   return (
     <ScrollView style={styles.container}>
       <View style={styles.backButton}>
@@ -252,9 +323,26 @@ export default function ScoreCardScreen({navigation}) {
                 </View>
                 <Text style={styles.newPlayer}>New name</Text>
                 <InputContainer
+                  style={{
+                    backgroundColor: 'red',
+                    width: '94%',
+                    borderRadius: 50,
+                  }}
                   onChangeText={text => setStriker(text)}
                   value={striker}
+                  placeyourtext={'Enter player name'}
                 />
+                <View style={styles.battingPicker}>
+                  <RNPickerSelect
+                    placeholder={{label: 'Batting Style', color: Colors.white}}
+                    onValueChange={value => setBattingStyle(value)}
+                    items={[
+                      {label: 'Right', value: 'Right'},
+                      {label: 'Left', value: 'Left'},
+                    ]}
+                  />
+                </View>
+
                 <View style={styles.buttonModal}>
                   <TouchableOpacity style={{width: 120}}>
                     <Button
@@ -292,6 +380,7 @@ export default function ScoreCardScreen({navigation}) {
                   onChangeText={text => setNonStriker(text)}
                   value={nonStriker}
                 />
+
                 <View style={styles.buttonModal}>
                   <TouchableOpacity style={{width: 120}}>
                     <Button
@@ -414,7 +503,7 @@ export default function ScoreCardScreen({navigation}) {
           </View>
           <View style={styles.Result}>
             <InputText>M</InputText>
-            <InputText>0</InputText>
+            <InputText>{data?.TeamInfo.maidenOvers}</InputText>
             <InputText>0</InputText>
           </View>
           <View style={styles.Result}>
@@ -433,13 +522,13 @@ export default function ScoreCardScreen({navigation}) {
           <Button2 title="0" onPress={() => postScore(0)} />
           <Button2 title="1" onPress={() => postScore(1)} />
           <Button2 title="2" onPress={() => postScore(2)} />
-          <Button1 type="lock" />
+          <Button1 type="undo" />
         </View>
         <View style={styles.buttons}>
           <Button2 title="3" onPress={() => postScore(3)} />
           <Button2 title="4" onPress={() => postScore(4)} />
           <Button2 title="6" onPress={() => postScore(6)} />
-          <Button1 type="lock" />
+          <Button1 type="redo" />
         </View>
         <View style={styles.buttons}>
           <View style={styles.pickerText}>
@@ -466,7 +555,7 @@ export default function ScoreCardScreen({navigation}) {
 
           <Button2 title="N-B" />
           {/* <Button2 title="L-B" /> */}
-          <Button1 type="lock" />
+          <Button1 type="swap-horizontal" />
         </View>
       </View>
     </ScrollView>
@@ -574,5 +663,13 @@ const styles = StyleSheet.create({
     height: height(7),
     backgroundColor: Colors.white,
     borderRadius: 50,
+  },
+  battingPicker: {
+    width: '100%',
+    height: 50,
+    backgroundColor: 'red',
+    borderRadius: 50,
+    marginTop: 15,
+    color: Colors.white,
   },
 });

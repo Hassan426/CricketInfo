@@ -14,7 +14,7 @@ const InputContainer = ({
   style,
 }) => {
   return (
-    <View style={styles.input}>
+    <View style={[styles.input, style]}>
       <Icon
         name={name}
         type="material-community"

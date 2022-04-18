@@ -42,7 +42,7 @@ const MatchScreen = ({navigation}) => {
     // optTo: Yup.string().min(3).max(4).required().label('OptTo'),
     overs: Yup.string().min(1).max(2).required().label('Overs'),
   });
-  const OnstoreData = values => {
+  const onstoreData = values => {
     setIsLoading(true);
     firestore()
       .collection('MatchInfo')
@@ -77,8 +77,6 @@ const MatchScreen = ({navigation}) => {
           bowlerScore: 0,
           perOverRuns: 0,
         },
-
-        // players: firestore.FieldValue.arrayUnion(tossvalue),
       })
 
       .then(() => {
@@ -104,7 +102,7 @@ const MatchScreen = ({navigation}) => {
       <View style={styles.input}>
         <Formik
           initialValues={{team1: '', team2: '', overs: ''}}
-          onSubmit={values => OnstoreData(values)}
+          onSubmit={values => onstoreData(values)}
           validationSchema={validationSchema}>
           {({handleChange, handleSubmit, errors}) => (
             <>
