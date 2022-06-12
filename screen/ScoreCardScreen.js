@@ -42,7 +42,10 @@ export default function ScoreCardScreen({navigation}) {
   const [isLoading, setIsloading] = useState(true);
   const [battingStyle, setBattingStyle] = useState();
   const [data, setData] = useState();
+  const [teamData, setTeamData] = useState();
   const [teamId, setTeamId] = useState();
+  const [playerId, setPlayerId] = useState();
+  const [players, setPlayers] = useState();
   // const [playerData, setPlayerData] = useState();
 
   // const [strikerScore, setStrikerScore] = useState(0);
@@ -61,18 +64,28 @@ export default function ScoreCardScreen({navigation}) {
     return () => subscriber();
   }, []);
 
-  // useEffect(() => {
-  //   const subscriber = firestore()
-  //     .collection('Player')
-  //     .doc('R6oRj1qCabXHUl2eSThm')
-  //     .onSnapshot(documentSnapshot => {
-  //       setPlayerData(documentSnapshot.data());
-  //       console.log('User data: ', documentSnapshot.data());
-  //     });
+  useEffect(() => {
+    const subscriber = firestore()
+      .collection('Team')
+      .doc(teamId)
+      .onSnapshot(documentSnapshot => {
+        setTeamData(documentSnapshot.data());
+        // console.log('Teamdata: ', documentSnapshot.data());
+      });
 
-  //   // Stop listening for updates when no longer required
-  //   return () => subscriber();
-  // }, []);
+    // Stop listening for updates when no longer required
+    return () => subscriber();
+  }, []);
+
+  useEffect(() => {
+    const subscriber = firestore()
+      .collection('MatchInfo')
+      .doc(userId)
+      .onSnapshot(documentSnapshot => {
+        setPlayers(documentSnapshot.data().Players);
+      });
+  }, []);
+
   const toggleStrikerBatsmanModal = () => {
     setIsStrikerModal(!isStrikerModal);
   };
@@ -85,8 +98,9 @@ export default function ScoreCardScreen({navigation}) {
   const toggleNonAttackerBowlerModal = () => {
     setIsNonattackerBowler(!isNonattackerBowler);
   };
+  console.log('===============================', players);
   const onStoreData = params => {
-    // console.log('*****************************', params);
+    // console.log('*****************************', params.strikerScore);
 
     try {
       firestore()
@@ -94,13 +108,23 @@ export default function ScoreCardScreen({navigation}) {
         .doc(userId)
         .update({
           TeamInfo: params,
+          Players: firestore.FieldValue.arrayUnion({
+            striker: striker,
+            playerID: playerId,
+            striker: params.striker,
+            strikerScore: params.strikerScore,
+            strikerBall: params.strikerBall,
+            four: params.four,
+            six: params.six,
+            strikRate: params.strikRate,
+          }),
         })
 
         .then(() => {
           console.log('User updated');
         })
         .catch(error => {
-          console.log('error', error);
+          console.log('errorss', error);
         });
     } catch (error) {
       console.log('Pkr liya:', error);
@@ -133,7 +157,7 @@ export default function ScoreCardScreen({navigation}) {
         onStorePlayerRecord();
       })
       .catch(error => {
-        console.log('error', error);
+        console.log('errors', error);
       });
   };
 
@@ -148,14 +172,17 @@ export default function ScoreCardScreen({navigation}) {
       })
       .then(Response => {
         onStoreTeamPlayers(Response._documentPath._parts[1]);
+        // setPlayerId(Response._documentPath._parts[1]);
         // console.log('playerID', Response._documentPath._parts[1]);
       });
   };
 
   const onStoreTeamPlayers = playerID => {
+    setPlayerId(playerID);
     console.log('iddddddddddddd', playerID);
-
-    {
+    if (teamData?.Players.length == 13) {
+      Alert.alert('you cannot add more then 12 players');
+    } else {
       teamId
         ? firestore()
             .collection('Team')
@@ -166,6 +193,7 @@ export default function ScoreCardScreen({navigation}) {
                 playerID: playerID,
                 playerName: striker,
                 battingStyle: battingStyle,
+                // nonStriker: nonStriker,
               }),
             })
             .then(() => {
@@ -200,7 +228,7 @@ export default function ScoreCardScreen({navigation}) {
       .set(
         {
           TeamInfo: {
-            wicket: data.TeamInfo.wicket + 1,
+            wicket: data.TeamInfo?.wicket + 1,
           },
         },
         {merge: true},
@@ -216,7 +244,7 @@ export default function ScoreCardScreen({navigation}) {
     const params = {
       ...data.TeamInfo,
       //Batsman Info
-      strikerScore: data.TeamInfo.strikerScore + score,
+      strikerScore: data?.TeamInfo.strikerScore + score,
       strikerBall: data.TeamInfo.strikerBall + 1,
       strikRate:
         ((data.TeamInfo.strikerScore + score) /
@@ -230,7 +258,8 @@ export default function ScoreCardScreen({navigation}) {
         (data.TeamInfo.totalScore + score * 6) /
         (data.TeamInfo.strikerBall + 1),
       //Bowling Info
-      ECR: (data.TeamInfo.totalScore + score) / (data.TeamInfo.overs + 1),
+      bowelerEconomyRate:
+        (data.TeamInfo.totalScore + score) / (data.TeamInfo.overs + 1),
       bowlerScore: data.TeamInfo.bowlerScore + score,
       perOverRuns: data.TeamInfo.strikerBall + score,
     };
@@ -274,15 +303,15 @@ export default function ScoreCardScreen({navigation}) {
           height: height(10.3),
         }}>
         <InputText4>
-          {data?.Team1} {data?.TeamInfo.totalScore || '0'}/
-          {data?.TeamInfo.wicket || '0'}
+          {data?.Team1} {data?.TeamInfo?.totalScore || '0'}/
+          {data?.TeamInfo?.wicket || '0'}
         </InputText4>
         <View style={styles.CRR}>
           <InputText3 numberOfLines={1}>
-            CRR:{data?.TeamInfo.currentRunRate.toFixed(2) || '0.0'}
+            CRR:{data?.TeamInfo?.currentRunRate.toFixed(2) || '0.0'}
           </InputText3>
           <InputText3>
-            {data?.TeamInfo.overs || '0'}.{data?.TeamInfo.ball || '0'}/
+            {data?.TeamInfo?.overs || '0'}.{data?.TeamInfo?.ball || '0'}/
             {data?.Overs} Overs
           </InputText3>
         </View>
@@ -312,7 +341,7 @@ export default function ScoreCardScreen({navigation}) {
             <Text style={styles.player}>BATSMAN</Text>
             <TouchableOpacity onPress={toggleStrikerBatsmanModal}>
               <Text style={{color: '#FFFF00'}} numberOfLines={1}>
-                {data?.TeamInfo.striker || 'player*'}
+                {data?.TeamInfo?.striker || 'player*'}
               </Text>
             </TouchableOpacity>
             <Modal isVisible={isStrikerModal}>
@@ -358,7 +387,7 @@ export default function ScoreCardScreen({navigation}) {
             </Modal>
             <TouchableOpacity onPress={toggleNonStrikerBatsmanModal}>
               <Text style={styles.player} numberOfLines={1}>
-                {data?.TeamInfo.nonStriker || 'player'}
+                {data?.TeamInfo?.nonStriker || 'player'}
               </Text>
             </TouchableOpacity>
             <Modal isVisible={isNonStrikerModal}>
@@ -397,27 +426,27 @@ export default function ScoreCardScreen({navigation}) {
           </View>
           <View style={styles.Result}>
             <InputText>R</InputText>
-            <InputText>{data?.TeamInfo.strikerScore || '0'}</InputText>
+            <InputText>{data?.TeamInfo?.strikerScore || '0'}</InputText>
             <InputText>0</InputText>
           </View>
           <View style={styles.Result}>
             <InputText>B</InputText>
-            <InputText>{data?.TeamInfo.strikerBall || '0'}</InputText>
+            <InputText>{data?.TeamInfo?.strikerBall || '0'}</InputText>
             <InputText>0</InputText>
           </View>
           <View style={styles.Result}>
             <InputText>4</InputText>
-            <InputText>{data?.TeamInfo.four || '0'}</InputText>
+            <InputText>{data?.TeamInfo?.four || '0'}</InputText>
             <InputText>0</InputText>
           </View>
           <View style={styles.Result}>
             <InputText>6</InputText>
-            <InputText>{data?.TeamInfo.six || '0'}</InputText>
+            <InputText>{data?.TeamInfo?.six || '0'}</InputText>
             <InputText>0</InputText>
           </View>
           <View style={styles.Result}>
             <InputText>SR</InputText>
-            <InputText>{data?.TeamInfo.strikRate.toFixed(2) || '0'}</InputText>
+            <InputText>{data?.TeamInfo?.strikRate.toFixed(2) || '0'}</InputText>
             <InputText>0.00</InputText>
           </View>
         </View>
@@ -426,7 +455,7 @@ export default function ScoreCardScreen({navigation}) {
             <InputText style={{color: '#FFFF00'}}>BOWLING</InputText>
             <TouchableOpacity onPress={toggleAttackerBowlerModal}>
               <Text style={styles.player}>
-                {data?.TeamInfo.attackBowler || 'bowler'}
+                {data?.TeamInfo?.attackBowler || 'bowler'}
               </Text>
             </TouchableOpacity>
             <Modal isVisible={isattackerBowler}>
@@ -455,7 +484,7 @@ export default function ScoreCardScreen({navigation}) {
             </Modal>
             <TouchableOpacity onPress={toggleNonAttackerBowlerModal}>
               <Text style={styles.player}>
-                {data?.TeamInfo.bowler || 'bowler'}
+                {data?.TeamInfo?.bowler || 'bowler'}
               </Text>
             </TouchableOpacity>
             <Modal isVisible={isNonattackerBowler}>
@@ -486,29 +515,31 @@ export default function ScoreCardScreen({navigation}) {
           <View style={styles.Result}>
             <InputText>O</InputText>
             <InputText>
-              {data?.TeamInfo.bowlerOvers || '0'}.{data?.TeamInfo.ball || '0'}
+              {data?.TeamInfo?.bowlerOvers || '0'}.{data?.TeamInfo?.ball || '0'}
             </InputText>
             <InputText>0</InputText>
           </View>
           <View style={styles.Result}>
             <InputText>R</InputText>
-            <InputText>{data?.TeamInfo.bowlerScore || '0'}</InputText>
+            <InputText>{data?.TeamInfo?.bowlerScore || '0'}</InputText>
             <InputText>0</InputText>
           </View>
           <View style={styles.Result}>
             <InputText>W</InputText>
 
-            <InputText>{data?.TeamInfo.wicket || '0'}</InputText>
+            <InputText>{data?.TeamInfo?.wicket || '0'}</InputText>
             <InputText>0</InputText>
           </View>
           <View style={styles.Result}>
             <InputText>M</InputText>
-            <InputText>{data?.TeamInfo.maidenOvers}</InputText>
+            <InputText>{data?.TeamInfo?.maidenOvers}</InputText>
             <InputText>0</InputText>
           </View>
           <View style={styles.Result}>
             <InputText>ECR</InputText>
-            <InputText>{data?.TeamInfo.ECR.toFixed(2) || '0'}</InputText>
+            <InputText>
+              {data?.TeamInfo?.bowelerEconomyRate.toFixed(2) || '0'}
+            </InputText>
             <InputText>0.00</InputText>
           </View>
         </View>

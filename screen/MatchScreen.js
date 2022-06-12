@@ -71,7 +71,7 @@ const MatchScreen = ({navigation}) => {
           wicket: 0,
           totalBall: 0,
           bowlerEconomyRate: 0,
-          ECR: 0,
+          bowelerEconomyRate: 0,
           bowlerOvers: 0,
           bowlerScore: 0,
           bowlerScore: 0,
